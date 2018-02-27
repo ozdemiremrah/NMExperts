@@ -1,0 +1,4 @@
+.vshost.exe
+.vshost.exe.manifest
+.pdb
+Expert.ico

@@ -1,0 +1,9 @@
+ExpertName=NMExampleExpert
+Manufacturer=Microsoft
+ExpertVersion=1.0.0.0
+TargetNetmonVersion=any
+ExpertCommandLineArgs="{NetmonOpenCaptureFile}" /frames {NetmonSelectedFrameRange} /cfilter "{NetmonConversationFilter}" /dfilter "{NetmonDisplayFilter}"
+ExpertHelpFile=My Expert Help File.rtf
+WixToolPath=C:\Program Files\WiX\
+UPGRADECODE=60E8BA27-60B1-46b4-A027-6296DFF3DB66
+GuidGenerator=QGUID.exe

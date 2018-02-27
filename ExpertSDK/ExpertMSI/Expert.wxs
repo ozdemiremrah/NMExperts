@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns='http://schemas.microsoft.com/wix/2003/01/wi'>
+
+  <!-- 
+  
+  This file is best viewed in Visual Studio.  
+  
+  In the 'Properties' window, set the "Schemas" property to "wix.xsd" which
+  should be checked in next to this file.  That will allow VS to validate 
+  your changes to this file and give helpful tooltips about the schema.
+  
+  Full WIX documentation can be found at http://wix.sourceforge.net/index.html
+  or http://wix.sourceforge.net/manual-wix2/wix_index.htm
+  
+  The following environment variables must be set prior to compiling this file:
+    
+  SetupSourcePath Fully qualified path to a folder containing all of the setup
+                  files (.wxi, .wxs, .bmp, .ico)
+                  
+  ExpertVersion   Version string in the form: MAJOR.MINOR.BUILD.REVSION
+
+  ExpertProductVersion Version string in the form: MAJOR.MINOR
+  
+  TargetNetmonVersion   Version of Netmon that is required for this expert 
+                        in the form: MAJOR.MINOR.BUILD.REVSION | any                       
+  
+  PRODUCTID       GUID value.  You can create one or use uuidgen.  Using the value
+                  '????????-????-????-????-????????????' will cause a new guid to be 
+                  generated for you each time this file is compiled.
+                  See http://msdn.microsoft.com/en-us/library/aa370854(VS.85).aspx
+  
+  PACKAGEID       GUID value.  You can create one or use uuidgen.  Using the value
+                  '????????-????-????-????-????????????' will cause a new guid to be 
+                  generated for you each time this file is compiled.
+                  See http://msdn.microsoft.com/en-us/library/aa370568(VS.85).aspx              
+  
+  UPGRADECODE     GUID value.
+                  This ID tells the installer how to handle already installed versions of this product. The 'Id' value should
+                  not be changed unless a version should co-exist with a previously released version.
+                  See http://msdn.microsoft.com/en-us/library/aa372375(VS.85).aspx    
+                    
+  PlatformID      x86 | amd64 | ia64
+                  Identifies the processor type that the expert can run on                  
+                  
+  ExpertName      Short name for the expert
+  
+  Manufacturer    Name of the company that produced the expert
+  
+  UpdatePath      Flag indicating whether the expert installation folder should be added to the 
+                  system path.  Values are 0 or 1.
+  
+  -->
+  
+  <!-- This is the short version string in the form MAJOR.MINOR -->
+  <?define ProductVersion = "$(env.ExpertProductVersion)" ?>
+  
+  <!-- These are identifiers for the product that are displayed to the user -->
+  <?define ProductName = "$(env.ExpertName)" ?>
+
+  <!-- Since this source will be used to build multiple architectures, define macros to make it generic -->
+  <?if $(env.PlatformID) = x86 ?>
+    <?define Platform = Intel ?>
+    <?define PFFolder = ProgramFilesFolder ?>
+    <?define SysFolder = SystemFolder ?>
+    <?define Win64State = no ?>
+  <?elseif $(env.PlatformID) = amd64 ?>
+    <?define Platform = x64 ?>
+    <?define PFFolder = ProgramFiles64Folder ?>
+    <?define SysFolder = System64Folder ?>
+    <?define Win64State = yes ?>
+  <?elseif $(env.PlatformID) = ia64 ?>
+    <?define Platform = Intel64 ?>
+    <?define PFFolder = ProgramFiles64Folder ?>
+    <?define SysFolder = System64Folder ?>
+    <?define Win64State = yes ?>
+  <?endif ?>
+
+  <!-- root tag for the package -->
+  <Product Id='$(env.productID)' 
+      	   UpgradeCode='$(env.UPGRADECODE)'
+           Version='$(env.ExpertVersion)' 
+           Manufacturer='$(env.Manufacturer)' 
+           Name='$(var.ProductName) $(var.ProductVersion)' 
+           Language='1033'>
+    
+    <Package Id='$(env.packageID)'
+             Keywords='Installer, $(var.ProductName)'
+             Platforms='$(var.Platform)'
+             InstallerVersion='200' 
+             Compressed='yes'
+             Description='$(var.ProductName) $(var.ProductVersion) Installer Package'
+             Comments='Creating a $(var.ProductName) Installer database' />
+
+    <Media Id='1' 
+           DiskPrompt='$(var.ProductName) $(var.ProductVersion) Installer - Disk 1' 
+           Cabinet='Expert.cab' 
+           EmbedCab='yes' 
+           VolumeLabel='ExpertDB1'/>
+    
+    <!-- Pre-install conditions -->
+
+    <Upgrade Id='$(env.UPGRADECODE)'>
+      <!-- This tells the installer to remove any version that is older that the one being installed -->
+      <UpgradeVersion Property='OLDVERFOUND' RemoveFeatures="All" IncludeMaximum='yes' Maximum='$(env.ExpertVersion)'/>
+
+      <!-- This tells the installer to detect when a version newer that the one being installed exists -->
+      <UpgradeVersion Property='NEWVERFOUND' OnlyDetect='yes' IncludeMinimum='no' Minimum='$(env.ExpertVersion)'/>
+    </Upgrade>
+
+    <!-- Checks for the appropriate version of Netmon that the expert should wor with -->
+    <Condition Message='You must install a compatible version of Microsoft Network Monitor before installing this package ([TARGETNETMONVERSION]).'>
+      <![CDATA[(REMOVE <> "") OR (TARGETNETMONVERSION = "any") OR (INSTALLEDNETMONVERSION <> "")]]>
+    </Condition>
+
+    <Condition Message='The version of Netmon installed on this computer is not compatible with this package.'>
+      <![CDATA[(REMOVE <> "") OR (TARGETNETMONVERSION = "any") OR (INSTALLEDNETMONVERSION = TARGETNETMONVERSION))]]>
+    </Condition>
+
+    <!-- Checks for an appropriate operating system -->
+    <Condition Message="This application only runs on Windows XP and above.">
+      VersionNT = 501 OR VersionNT = 502 OR (VersionNT >= 600 AND WindowsBuild >= 5520)
+    </Condition>
+
+    <!--
+    Only 32bit installer on 64bit OS will fail on this check. 64bit installer on 32bit OS
+    will even not come to this stage (will be killed by the Platform check)
+    -->
+    <Condition Message="This installer is only for 32-bit Windows operating systems. Please use the 64-bit installer for your system.">
+      <![CDATA[(Intel AND NOT VersionNT64 AND MSIArch = "x86") OR (Msix64 AND MSIArch = "amd64") OR (Intel64 AND MSIArch = "ia64")]]>
+    </Condition>
+
+    <!-- End of pre-install conditions -->
+
+
+    <!-- Property definitions  -->
+    <Property Id="ARPPRODUCTICON">$(env.SetupSourcePath)\expert.ico</Property>
+    <Property Id="MSIArch">$(env.PlatformID)</Property>
+
+    <!-- Version of Netmon that this expert is compatible with -->
+    <Property Id="TARGETNETMONVERSION">$(env.TargetNetmonVersion)</Property>
+
+    <!-- Receives the version of the installed edition of Netmon (if any) -->
+    <Property Id='INSTALLEDNETMONVERSION' Secure='yes'>
+      <RegistrySearch Id='NetmonVersionSearch' Root='HKLM' Key='Software\Microsoft\Netmon3' Name='NetmonVersion'
+          Type='raw' Win64='$(var.Win64State)'/>
+    </Property>
+
+    <Property Id='ExpertName' Value='$(var.ProductName)'></Property>
+    <Property Id='DiskPrompt' Value='$(var.ProductName) Installation [1]' />
+
+    <!-- End of property definitions  -->
+    
+    <!-- Custom actions -->
+    <!-- Informs the user that a newer version of the expert is already on the system -->
+    <CustomAction Id='AlreadyUpdated' Error='A newer version of $(env.ExpertName) is already installed on your machine. Please uninstall your current version before installing any older versions.' />
+    <CustomAction Id='DeleteExpertRegistry' Directory='TARGETDIR' ExeCommand='reg.exe delete HKLM\Software\Microsoft\Netmon3\Experts\$(env.UPGRADECODE) /f' Execute='deferred' Impersonate='yes' Return='ignore' />
+    <CustomAction Id='DeleteExpertSettings' Directory='TARGETDIR' ExeCommand='reg.exe delete HKCU\Software\Microsoft\Netmon3\Experts\$(env.UPGRADECODE) /f' Execute='deferred' Impersonate='yes' Return='ignore' />
+    <!-- End of custom actions -->
+
+    <!-- Files and settings that are available to install -->
+    <Directory Id='TARGETDIR' Name='SourceDir'>
+      <Directory Id='$(var.PFFolder)' Name='PFiles'>
+        <Directory Id='ExpertsFolder' Name='NetExp' LongName='Network Monitor Experts'>
+          <!-- Registry Settings -->
+          <?include RegistrySettings.wxi ?>
+
+          <!-- Files -->
+          <?include ExpertFiles.wxi ?>
+
+          <?if $(env.UpdatePath) = 1 ?>
+            <!-- update PATH env variable -->
+            <Component Id='UpdateEnvVar' Guid='$(env.UPGRADECODE)'>
+              <Environment Id='UpdatePath' Name='PATH' Action='create' System='yes' Part='last' Value='[INSTALLDIR]' />
+            </Component>
+          <?endif ?>
+        </Directory>
+      </Directory>
+      <!--End of ProgramFilesFolder-->
+      
+      <Directory Id="DesktopFolder" Name="Desktop" />
+    </Directory>
+    <!-- End of files and settings that are available to install -->
+
+    <Feature Id='Complete' 
+             Title='$(var.ProductName)' 
+             Description='The complete package.'
+             TypicalDefault='install' 
+             Display='expand' 
+             Level='1' 
+             Absent='disallow' 
+             InstallDefault='local'
+             AllowAdvertise='no' 
+             ConfigurableDirectory='INSTALLDIR'>
+
+      <ComponentRef Id='ExpertRegistrySettings'/>     
+
+      <?include ExpertComponents.wxi ?>
+
+      <!--Update the System path variable-->
+      <?if $(env.UpdatePath) = 1 ?>
+      <Feature Id='SystemPath' 
+               Title ='Update System Path' 
+               Description ='Add application directory to system path'
+               TypicalDefault='install' 
+               Level='1' 
+               InstallDefault='local' 
+               AllowAdvertise='no'>        
+        <ComponentRef Id='UpdateEnvVar' />      
+      </Feature>
+      <?endif ?>
+    </Feature>
+
+    <InstallExecuteSequence>
+      <!-- See http://msdn.microsoft.com/en-us/library/aa369500(VS.85).aspx -->
+      <Custom Action='AlreadyUpdated' After='FindRelatedProducts'>NEWVERFOUND</Custom>
+      <Custom Action='DeleteExpertRegistry' Before='InstallFinalize'>NOT UPGRADINGPRODUCTCODE AND REMOVE</Custom>
+      <Custom Action='DeleteExpertSettings' Before='InstallFinalize'>NOT UPGRADINGPRODUCTCODE AND REMOVE</Custom>
+      <RemoveExistingProducts After='InstallValidate'>OLDVERFOUND</RemoveExistingProducts>
+    </InstallExecuteSequence>
+
+    <!-- Setup Wizard Dialogs -->
+    <?include UI.wxi ?>
+
+  </Product>  
+</Wix>

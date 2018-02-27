@@ -1,0 +1,153 @@
+
+
+Microsoft Network Monitor Expert Installer Generator
+----------------------------------------------------
+
+This script creates a Windows Installer package (msi) for deploying 'expert' 
+add-ons to Microsoft Network Monitor.  For detailed help on expert installer
+packages, see http://
+
+This script requires the WIX 2.0 toolset files.  These can be downloaded from 
+http://sourceforge.net/project/showfiles.php?group_id=105970&package_id=114109
+
+Note:  WIX requires .Net 2.0 or greater.
+
+This script also requires Perl.  perl.exe must be on the default PATH.
+You can down your favorite version from http://www.perl.org/get.html
+
+The arguments for this script can be passed on the command line or specified in
+an input file.  When using an input file, place each argument on a separate line
+without the '-'. Do not surround values with quotes in the input file.  Input files
+are useful unless you enjoy typing long command lines.
+
+i.e.
+	TargetFile=Expert.msi
+	Manufacturer=Microsoft Corporation
+
+Some of the arguments take GUIDs as values.  You can generate GUIDs from
+http://www.guidgenerator.com/online-guid-generator.aspx
+
+All GUIDS used by this script must be in the form ????????-????-????-????-????????????
+
+usage: CreateExpertInstaller inputFile | arg1 arg2 ...
+
+(Required)
+
+	-ExpertName string
+		Friendly name of your expert.  i.e. "The Greatest Expert Ever"
+	
+	-Manufacturer string
+		Person or company that produced the expert.
+	
+	-ExpertVersion MAJOR.MINOR.BUILD.REVISION
+		Long version number of the expert.  i.e. 1.0.123.1
+	
+	-UPGRADECODE guid
+		Identifer GUID value for your expert. 
+
+		You should use the same value for future versions of your expert.  That way, 
+		Windows will automatically upgrade any existing version of the expert that 
+		the user might have on their system.
+
+	-PlatformID x86 | amd64 | ia64
+		Processor that the expert was built for.
+		You must create separate installers for each platform.  
+
+	-BinaryPath path
+		Directory where the files to be installed by the package reside.  The entire
+		contents of the directory, including child directories, will be included.
+
+		*** DO NOT INCLUDE ANY FILES INSTALLED BY NETMON (like nmapi.dll) *** 
+
+		The installer will use "%PROGRAMFILES%\Netmon Experts\ExpertName ExpertVersion"
+		as the default location on the target machine for the expert files.
+
+		*** This location can be changed by the end user during install ***
+
+    	  	You should avoid depending on a hard-coded path in your expert.
+
+		To reference the actual location, use [INSTALLDIR].  This will be replaced with 
+		whatever location the user chose when they installed the package.  You can use this
+		token in the ExpertCommandLineArgs, ExpertWorkingDirectory, or ExpertHelpFile
+		arguments.
+
+		i.e  ExpertHelpFile can bet set to "[INSTALLDIR]\doc\expert.chm" assuming there is a 
+		doc sub-directory under BinaryPath.
+
+	-ExpertCommand string
+		The command to invoke the expert.  Do not include any parameters.  
+		This is usually the main executeable.  
+
+		i.e. expert.exe
+		
+(optional)
+
+	-TargetFile filename
+		Name of the msi package to generate.  This can be a filename or
+		a fully qualified path to a file (recommended).
+		Existing files will be over-written
+
+		The default is %TEMP%\expert.msi
+
+	-ExpertCommandLineArgs string
+		Arguments to pass to the ExpertCommand.  
+		See http:// 
+		for a list of special strings that Netmon will substitue values for.
+
+	-ExpertDontEscapeFilterArgs
+		If specified, the command line arguments, {NetmonConversationFilter} and {NetmonDisplayFilter}, passed
+		to the expert will not include escaped double quotes and backslashes immediately preceding double quotes.
+
+	-ExpertWorkingDirectory path
+		Location on the user's machine that should be used as the default 
+		working directory for the ExpertCommand.  
+
+		The default value is [INSTALLDIR]		
+
+	-ExpertHelpFile filename
+		Name of the help file for the expert.  This is usually a path relative to 
+		where the expert was installed.  
+
+		i.e. [INSTALLDIR]\expert.chm
+		
+		You must ensure that the file extension will be handled by Windows.
+
+	-UpdatePath 
+		If specified, the installer will append the location where the expert was installed
+		on the user's machine to the PATH environment variable.
+
+		To use this argument in a settings file, supply "true" as the value.
+
+	-TargetNetmonVersion MAJOR.MINOR.BUILD.REVISION | any
+		Specific version of Netmon that the expert works with.
+		Use 'any' if it does not matter.
+
+		The default value is "any"
+
+	-WixToolPath path
+		location of the WIX tools; candle.exe, light.exe, and supporting files.  
+		You can omit this setting if the files are on the default path.
+
+	-SetupSourcePath path
+		Location of the files required by this script.  
+
+		The default value is the same folder that this script is located in.  
+
+	-PRODUCTID guid
+		Optional identifer GUID value for the installer product.  
+		If this is not provided, one will be generated for you.
+
+	-PACKAGEID guid
+		Optional identifer GUID value for the installer package.  
+		If this is not provided, one will be generated for you.
+
+	-GuidGenerator {command line}
+		Fully qualified command line for a script or process that will return a new GUID to STDOUT.
+		If this option is not set, the user will be prompted for a new GUID each time one is needed 
+		by the script during execution.
+
+		Note:
+		WIX 2.0 supports automatic generation of GUIDS for Products and Packages but not for Components.
+		The installer requires Components to be used for registry settings and each directory installed
+		by the experts.  Failure to provide a unique GUID can lead to conflicts between other experts and
+		different versions of the same expert.
